@@ -1,9 +1,9 @@
 from flask import Flask,request,jsonify
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from model import Base,Puppy
+from models import Base,Puppy
 
-engine=create_engine('sqlite://puppies.db')
+engine=create_engine('sqlite:///puppies.db')
 Base.metadata.bind=engine
 
 DBSession=sessionmaker(bind=engine)
@@ -13,6 +13,7 @@ app = Flask(__name__)
 # Create the appropriate app.route functions. Test and see if they work
 
 #Make an app.route() decorator here for when the client sends the URI "/puppies"
+@app.route("/")
 @app.route("/puppies",methods=['GET','POST'])
 def puppiesFunction():
     if request.method=='GET':
@@ -48,7 +49,7 @@ def getAllPuppies():
     puppies = session.query(Puppy).all()
     return jsonify(Puppies=[i.serialize for i in puppies])
 
-def makeANewPuppy():
+def makeANewPuppy(name, description):
     puppy = Puppy(name = name, description = description)
     session.add(puppy)
     session.commit()
@@ -58,7 +59,7 @@ def getPuppy(id):
     puppy = session.query(Puppy).filter_by(id = id).one()
     return jsonify(puppy=puppy.serialize)
 
-def updatePuppy(id):
+def updatePuppy(id,name, description):
     puppy = session.query(Puppy).filter_by(id = id).one()
     if not name:
         puppy.name = name
@@ -79,4 +80,4 @@ def deletePuppy(id):
 
 if __name__ == '__main__':
     app.debug = True
-    app.run(host='0.0.0.0', port=5000)
+    app.run(host='0.0.0.0', port=5000,threaded = False)
