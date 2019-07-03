@@ -1,4 +1,14 @@
-from flask import Flask,request
+from flask import Flask,request,jsonify
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
+from model import Base,Puppy
+
+engine=create_engine('sqlite://puppies.db')
+Base.metadata.bind=engine
+
+DBSession=sessionmaker(bind=engine)
+session=DBSession()
+
 app = Flask(__name__)
 # Create the appropriate app.route functions. Test and see if they work
 
@@ -8,7 +18,14 @@ def puppiesFunction():
     if request.method=='GET':
         return getAllPuppies()
     elif request.method=='POST':
-        return makeANewPuppy()
+        print "Making a New puppy"
+
+        name = request.args.get('name', '')
+        description = request.args.get('description', '')
+        print name
+        print description
+        return makeANewPuppy(name, description)
+
 
 
 
@@ -17,26 +34,46 @@ def puppiesFunction():
 def puppiesFunctionId(id):
     if request.method=='GET':
         return getPuppy(id)
+
     if request.method=='PUT':
-        return updatePuppy(id)
+        name = request.args.get('name', '')
+        description = request.args.get('description', '')
+        return updatePuppy(id,name, description)
+
     if request.method=='DELETE':
          return deletePuppy(id)
 
 
 def getAllPuppies():
-    return "Getting all puppies!"
+    puppies = session.query(Puppy).all()
+    return jsonify(Puppies=[i.serialize for i in puppies])
 
 def makeANewPuppy():
-    return "Creating A New Puppy!"
+    puppy = Puppy(name = name, description = description)
+    session.add(puppy)
+    session.commit()
+    return jsonify(Puppy=puppy.serialize)
 
 def getPuppy(id):
-    return "Getting Puppy with id %s"% id
+    puppy = session.query(Puppy).filter_by(id = id).one()
+    return jsonify(puppy=puppy.serialize)
 
 def updatePuppy(id):
-    return "Updating a Puppy with id %s" % id
+    puppy = session.query(Puppy).filter_by(id = id).one()
+    if not name:
+        puppy.name = name
+    if not description:
+        puppy.description = description
+
+    session.add(puppy)
+    session.commit()
+    return "Updated a Puppy with id %s" % id
 
 def deletePuppy(id):
-    return "Removing Puppy with id %s" %id
+    puppy = session.query(Puppy).filter_by(id = id).one()
+    session.delete(puppy)
+    session.commit()
+    return "Removed Puppy with id %s" % id
 
 
 
